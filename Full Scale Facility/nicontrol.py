@@ -152,8 +152,8 @@ def fill_log_acquisition_thread_target(result_container, duration_s, sample_rate
     result_container[key] = acquire_fill_mfc_log(duration_s, sample_rate_hz)
 
 
-#ignites the facility and reads the pressure taps
-def set_ignite_read_pressure(testcount, vacuum_pressure, fill_pressure):
+#ignites the facility and reads the pressure taps (laser ignition mode)
+def laser_ignite_read_pressure(testcount, vacuum_pressure, fill_pressure):
     ignite_port = "cDAQ9188-169338EMod2/port0/line0:7"
     _, d2 = get_daq_states()
     base = list((d2 + [False] * 8)[:8])
@@ -162,8 +162,8 @@ def set_ignite_read_pressure(testcount, vacuum_pressure, fill_pressure):
     off_states = list(base)
     off_states[DAQ2_LINE_TIMING_OUTPUT] = False
 
-    bnc_box_control.switch_preset(12) #switches bnc box to triggered single shot for PLIF 
-    bnc_box_control.arm("ON") #ensures BNC box is armed for trigger signal 
+    bnc_box_control.switch_preset(12, box="laser") #switches bnc box to triggered single shot for PLIF 
+    bnc_box_control.arm("ON", box="laser") #ensures BNC box is armed for trigger signal 
 
     with nidaqmx.Task() as do_task:
         do_task.do_channels.add_do_chan(ignite_port, line_grouping=LineGrouping.CHAN_PER_LINE)
@@ -174,7 +174,7 @@ def set_ignite_read_pressure(testcount, vacuum_pressure, fill_pressure):
     _daq2_state = off_states
     print("timing box signal sent")
 
-    bnc_box_control.switch_preset(9) #switches bnc box back to continuous mode 
+    bnc_box_control.switch_preset(9, box="laser") #switches bnc box back to continuous mode
 
 
     sample_rate_Hz = 1_000_000
@@ -200,7 +200,47 @@ def set_ignite_read_pressure(testcount, vacuum_pressure, fill_pressure):
         data = ai_task.read(number_of_samples_per_channel=samples, timeout=10.0)
         print("acquisition complete")
 
+def spark_ignite_read_pressure(testcount, vacuum_pressure, fill_pressure):
+    ignite_port = "cDAQ9188-169338EMod2/port0/line0:7"
+    _, d2 = get_daq_states()
+    base = list((d2 + [False] * 8)[:8])
+    on_states = list(base)
+    on_states[DAQ2_LINE_TIMING_OUTPUT] = True
+    off_states = list(base)
+    off_states[DAQ2_LINE_TIMING_OUTPUT] = False
 
+    with nidaqmx.Task() as do_task:
+        do_task.do_channels.add_do_chan(ignite_port, line_grouping=LineGrouping.CHAN_PER_LINE)
+        do_task.write(on_states)
+        time.sleep(0.010)
+        do_task.write(off_states)
+    global _daq2_state
+    _daq2_state = off_states
+    print("timing box signal sent")
+
+
+    sample_rate_Hz = 1_000_000
+    duration_s = 0.1
+    samples = int(sample_rate_Hz * duration_s)
+    mod5_channels = "cDAQ9188-169338EMod5/ai0:3"
+    mod6_channels = "cDAQ9188-169338EMod6/ai0:3"
+
+    with nidaqmx.Task() as ai_task:
+        ai_task.ai_channels.add_ai_voltage_chan(mod5_channels, min_val=-10, max_val=10)
+        ai_task.ai_channels.add_ai_voltage_chan(mod6_channels, min_val=-10, max_val=10)
+        ai_task.timing.cfg_samp_clk_timing(
+            sample_rate_Hz,
+            source="OnboardClock",
+            sample_mode=AcquisitionType.FINITE,
+            samps_per_chan=samples,
+        )
+        ai_task.triggers.start_trigger.cfg_dig_edge_start_trig(
+            trigger_source="/cDAQ9188-169338E/PFI1",
+            trigger_edge=Edge.FALLING,
+        )
+        print("Waiting for trigger on PFI1")
+        data = ai_task.read(number_of_samples_per_channel=samples, timeout=10.0)
+        print("acquisition complete")
 
 
     data = np.asarray(data, dtype=np.float64)

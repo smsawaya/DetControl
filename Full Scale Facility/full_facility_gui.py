@@ -166,13 +166,14 @@ class DriverWorker(QObject):
 
 class SolenoidWorker(QObject):
     finished = Signal()
-    def __init__(self, daq1, daq2, testcount, vacuum_pressure, post_fill_pressure):
+    def __init__(self, daq1, daq2, testcount, vacuum_pressure, post_fill_pressure, ignition_mode="laser"):
         super().__init__()
         self.daq1 = daq1 
         self.daq2 = daq2 
         self.testcount = testcount
         self.vacuum_pressure = vacuum_pressure
         self.post_fill_pressure = post_fill_pressure
+        self.ignition_mode = ignition_mode
 
     def runsolenoid(self):
         nicontrol.set_digital_output(self.daq1)
@@ -180,7 +181,10 @@ class SolenoidWorker(QObject):
         self.finished.emit()
     
     def runignite(self):
-        nicontrol.set_ignite_read_pressure(self.testcount, self.vacuum_pressure, self.post_fill_pressure)
+        if self.ignition_mode == "laser":
+            nicontrol.laser_ignite_read_pressure(self.testcount, self.vacuum_pressure, self.post_fill_pressure)
+        else:
+            nicontrol.spark_ignite_read_pressure(self.testcount, self.vacuum_pressure, self.post_fill_pressure)
         klinger_control.move_to_zero()
         self.finished.emit()
 
@@ -206,10 +210,13 @@ class MyDialog(QDialog):
         nicontrol.set_digital_output_2(self.daq2)
 
 
+        self.ignition_mode = "laser"
+        self.ui.bnc_ignition_state.setText("Laser")
+
         # Ensures BNC box is in continuous mode and armed on GUI startup; labels track last commands.
         try:
-            # bnc_box_control.switch_preset(9)
-            # bnc_box_control.arm("ON")
+            # bnc_box_control.switch_preset(9, box=self.ignition_mode)
+            # bnc_box_control.arm("ON", box=self.ignition_mode)
             self.ui.bnc_arm_state.setText("ON")
             self.ui.bnc_mode_state.setText("Continuous")
         except Exception as e:
@@ -272,6 +279,8 @@ class MyDialog(QDialog):
         self.ui.bnc_arm_off.clicked.connect(self._bnc_gui_arm_off)
         self.ui.bnc_continuous_mode.clicked.connect(self._bnc_gui_continuous_mode)
         self.ui.bnc_single_mode.clicked.connect(self._bnc_gui_single_mode)
+        self.ui.bnc_laser_mode.clicked.connect(self._bnc_gui_laser_mode)
+        self.ui.bnc_spark_mode.clicked.connect(self._bnc_gui_spark_mode)
 
         # Pressure auto-read controls (vacuum phase helper)
         self.ui.start_auto_read.clicked.connect(self.start_auto_read)
@@ -455,32 +464,44 @@ class MyDialog(QDialog):
         self.update_solenoid_labels()
 
     def _bnc_gui_arm_on(self):
-        try:
-            # bnc_box_control.arm("ON")
-            self.ui.bnc_arm_state.setText("ON")
-        except Exception as e:
-            print("BNC arm ON failed:", e)
+        if self.ignition_mode == "laser":
+            try:
+                bnc_box_control.arm("ON", box=self.ignition_mode)
+                self.ui.bnc_arm_state.setText("ON")
+            except Exception as e:
+                print("BNC arm ON failed:", e)
 
     def _bnc_gui_arm_off(self):
-        try:
-            # bnc_box_control.arm("OFF")
-            self.ui.bnc_arm_state.setText("OFF")
-        except Exception as e:
-            print("BNC arm OFF failed:", e)
+        if self.ignition_mode == "laser":
+            try:
+                bnc_box_control.arm("OFF", box=self.ignition_mode)
+                self.ui.bnc_arm_state.setText("OFF")
+            except Exception as e:
+                print("BNC arm OFF failed:", e)
 
     def _bnc_gui_continuous_mode(self):
-        try:
-            # bnc_box_control.switch_preset(9)
-            self.ui.bnc_mode_state.setText("Continuous (preset 9)")
-        except Exception as e:
-            print("BNC continuous mode failed:", e)
+        if self.ignition_mode == "laser":
+            try:
+                bnc_box_control.switch_preset(9, box=self.ignition_mode)
+                self.ui.bnc_mode_state.setText("Continuous (preset 9)")
+            except Exception as e:
+                print("BNC continuous mode failed:", e)
 
     def _bnc_gui_single_mode(self):
-        try:
-            # bnc_box_control.switch_preset(12)
-            self.ui.bnc_mode_state.setText("Single shot (preset 12)")
-        except Exception as e:
-            print("BNC single-shot mode failed:", e)
+        if self.ignition_mode == "laser":
+            try:
+                bnc_box_control.switch_preset(12, box=self.ignition_mode)
+                self.ui.bnc_mode_state.setText("Single shot (preset 12)")
+            except Exception as e:
+                print("BNC single-shot mode failed:", e)
+
+    def _bnc_gui_laser_mode(self):
+        self.ignition_mode = "laser"
+        self.ui.bnc_ignition_state.setText("Laser")
+
+    def _bnc_gui_spark_mode(self):
+        self.ignition_mode = "spark"
+        self.ui.bnc_ignition_state.setText("Spark")
 
   
     stop_test = False
@@ -608,7 +629,7 @@ class MyDialog(QDialog):
         self.ui.igniteButton.setStyleSheet("")
 
         testcount = self.testcount 
-        ignite_worker = SolenoidWorker(0,0, testcount, self.vacuum_pressure, self.post_fill_pressure)
+        ignite_worker = SolenoidWorker(0, 0, testcount, self.vacuum_pressure, self.post_fill_pressure, self.ignition_mode)
         ignite_thread = QThread()
         ignite_worker.moveToThread(ignite_thread)
         ignite_thread.started.connect(ignite_worker.runignite)

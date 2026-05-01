@@ -2,7 +2,7 @@ import serial
 import time
 
 LASER_COM_PORT = "COM6"
-SPARK_COM_PORT = "COM7"
+IGNITION_COM_PORT = "COM7"
 BAUD = 9600
 READ_TIMEOUT_S = 1.0
 
@@ -10,7 +10,8 @@ READ_TIMEOUT_S = 1.0
 def switch_preset(preset_number, box):
     """Send *RCL <n> to the BNC box; expect a line containing ``ok`` (case-insensitive)."""
     n = int(preset_number) #converts preset number to an integer
-    ser = serial.Serial(LASER_COM_PORT, BAUD, timeout=READ_TIMEOUT_S)
+    port = LASER_COM_PORT if box == "laser" else IGNITION_COM_PORT
+    ser = serial.Serial(port, BAUD, timeout=READ_TIMEOUT_S)
     try:  # send *RCL; raise if response line has no ok
         ser.reset_input_buffer()
         ser.write(b"*RCL %d\r\n" % n)
@@ -27,7 +28,8 @@ def switch_preset(preset_number, box):
 def arm(state, box):
     """Send :PULSE0:STATE ON or OFF to the BNC box; expect a line containing ``ok`` (case-insensitive)."""
     state = str(state).upper()
-    ser = serial.Serial(LASER_COM_PORT, BAUD, timeout=READ_TIMEOUT_S)
+    port = LASER_COM_PORT if box == "laser" else IGNITION_COM_PORT
+    ser = serial.Serial(port, BAUD, timeout=READ_TIMEOUT_S)
     try:
         ser.reset_input_buffer()
         ser.write(f":PULSE0:STATE {state}\r\n".encode())
