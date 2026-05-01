@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'ui_full_facility_gui_scripthunIqP.ui'
+## Form generated from reading UI file 'ui_full_facility_gui_scriptdbYYZf.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.1
 ##
@@ -23,7 +23,7 @@ class Ui_full_facility_gui(object):
     def setupUi(self, full_facility_gui):
         if not full_facility_gui.objectName():
             full_facility_gui.setObjectName(u"full_facility_gui")
-        full_facility_gui.resize(1688, 595)
+        full_facility_gui.resize(1688, 679)
         full_facility_gui.setStyleSheet(u"/*Copyright (c) DevSec Studio. All rights reserved.\n"
 "\n"
 "MIT License\n"
@@ -2183,7 +2183,7 @@ class Ui_full_facility_gui(object):
         self.mfcAgas.setGeometry(QRect(100, 90, 81, 21))
         self.line = QFrame(full_facility_gui)
         self.line.setObjectName(u"line")
-        self.line.setGeometry(QRect(940, 0, 61, 601))
+        self.line.setGeometry(QRect(940, 0, 61, 671))
         self.line.setFrameShape(QFrame.Shape.VLine)
         self.line.setFrameShadow(QFrame.Shadow.Sunken)
         self.solenoidstatelabel = QLabel(full_facility_gui)
@@ -2209,7 +2209,7 @@ class Ui_full_facility_gui(object):
         self.closeS1.setGeometry(QRect(1240, 60, 92, 31))
         self.line_2 = QFrame(full_facility_gui)
         self.line_2.setObjectName(u"line_2")
-        self.line_2.setGeometry(QRect(1460, -10, 41, 611))
+        self.line_2.setGeometry(QRect(1460, -10, 41, 691))
         self.line_2.setFrameShape(QFrame.Shape.VLine)
         self.line_2.setFrameShadow(QFrame.Shadow.Sunken)
         self.purgebutton = QPushButton(full_facility_gui)
@@ -3489,32 +3489,32 @@ class Ui_full_facility_gui(object):
         self.bnc_box_control_label.setGeometry(QRect(1190, 460, 111, 31))
         self.bnc_continuous_mode = QPushButton(full_facility_gui)
         self.bnc_continuous_mode.setObjectName(u"bnc_continuous_mode")
-        self.bnc_continuous_mode.setGeometry(QRect(1140, 540, 92, 31))
+        self.bnc_continuous_mode.setGeometry(QRect(1140, 590, 92, 31))
         self.bnc_arm_on = QPushButton(full_facility_gui)
         self.bnc_arm_on.setObjectName(u"bnc_arm_on")
-        self.bnc_arm_on.setGeometry(QRect(1140, 500, 92, 31))
+        self.bnc_arm_on.setGeometry(QRect(1140, 550, 92, 31))
         self.bnc_mode_label = QLabel(full_facility_gui)
         self.bnc_mode_label.setObjectName(u"bnc_mode_label")
-        self.bnc_mode_label.setGeometry(QRect(1040, 540, 71, 20))
+        self.bnc_mode_label.setGeometry(QRect(1040, 590, 71, 20))
         self.bnc_arm_label = QLabel(full_facility_gui)
         self.bnc_arm_label.setObjectName(u"bnc_arm_label")
-        self.bnc_arm_label.setGeometry(QRect(1040, 500, 71, 20))
+        self.bnc_arm_label.setGeometry(QRect(1040, 550, 71, 20))
         self.bnc_arm_state = QLabel(full_facility_gui)
         self.bnc_arm_state.setObjectName(u"bnc_arm_state")
-        self.bnc_arm_state.setGeometry(QRect(1340, 500, 71, 20))
+        self.bnc_arm_state.setGeometry(QRect(1340, 550, 71, 20))
         self.bnc_arm_state.setFont(font)
         self.bnc_arm_state.setTextFormat(Qt.TextFormat.RichText)
         self.bnc_mode_state = QLabel(full_facility_gui)
         self.bnc_mode_state.setObjectName(u"bnc_mode_state")
-        self.bnc_mode_state.setGeometry(QRect(1340, 540, 101, 20))
+        self.bnc_mode_state.setGeometry(QRect(1340, 590, 101, 20))
         self.bnc_mode_state.setFont(font)
         self.bnc_mode_state.setTextFormat(Qt.TextFormat.RichText)
         self.bnc_single_mode = QPushButton(full_facility_gui)
         self.bnc_single_mode.setObjectName(u"bnc_single_mode")
-        self.bnc_single_mode.setGeometry(QRect(1240, 540, 92, 31))
+        self.bnc_single_mode.setGeometry(QRect(1240, 590, 92, 31))
         self.bnc_arm_off = QPushButton(full_facility_gui)
         self.bnc_arm_off.setObjectName(u"bnc_arm_off")
-        self.bnc_arm_off.setGeometry(QRect(1240, 500, 92, 31))
+        self.bnc_arm_off.setGeometry(QRect(1240, 550, 92, 31))
         self.mfcA_last_setpoint = QLCDNumber(full_facility_gui)
         self.mfcA_last_setpoint.setObjectName(u"mfcA_last_setpoint")
         self.mfcA_last_setpoint.setGeometry(QRect(383, 90, 51, 23))
@@ -3530,6 +3530,20 @@ class Ui_full_facility_gui(object):
         self.last_sent_setpoint_2 = QLabel(full_facility_gui)
         self.last_sent_setpoint_2.setObjectName(u"last_sent_setpoint_2")
         self.last_sent_setpoint_2.setGeometry(QRect(390, 50, 51, 31))
+        self.bnc_ignition_label = QLabel(full_facility_gui)
+        self.bnc_ignition_label.setObjectName(u"bnc_ignition_label")
+        self.bnc_ignition_label.setGeometry(QRect(1040, 510, 81, 20))
+        self.bnc_ignition_state = QLabel(full_facility_gui)
+        self.bnc_ignition_state.setObjectName(u"bnc_ignition_state")
+        self.bnc_ignition_state.setGeometry(QRect(1340, 510, 71, 20))
+        self.bnc_ignition_state.setFont(font)
+        self.bnc_ignition_state.setTextFormat(Qt.TextFormat.RichText)
+        self.bnc_spark_mode = QPushButton(full_facility_gui)
+        self.bnc_spark_mode.setObjectName(u"bnc_spark_mode")
+        self.bnc_spark_mode.setGeometry(QRect(1240, 510, 92, 31))
+        self.bnc_laser_mode = QPushButton(full_facility_gui)
+        self.bnc_laser_mode.setObjectName(u"bnc_laser_mode")
+        self.bnc_laser_mode.setGeometry(QRect(1140, 510, 92, 31))
 
         self.retranslateUi(full_facility_gui)
 
@@ -3546,6 +3560,7 @@ class Ui_full_facility_gui(object):
         self.closeS10.setDefault(True)
         self.bnc_single_mode.setDefault(True)
         self.bnc_arm_off.setDefault(True)
+        self.bnc_spark_mode.setDefault(True)
 
 
         QMetaObject.connectSlotsByName(full_facility_gui)
@@ -3767,5 +3782,9 @@ class Ui_full_facility_gui(object):
         self.bnc_arm_off.setText(QCoreApplication.translate("full_facility_gui", u"Arm OFF", None))
         self.last_sent_setpoint.setText(QCoreApplication.translate("full_facility_gui", u"Last Sent", None))
         self.last_sent_setpoint_2.setText(QCoreApplication.translate("full_facility_gui", u"Setpoint", None))
+        self.bnc_ignition_label.setText(QCoreApplication.translate("full_facility_gui", u"Ignition Mode", None))
+        self.bnc_ignition_state.setText(QCoreApplication.translate("full_facility_gui", u"LASER", None))
+        self.bnc_spark_mode.setText(QCoreApplication.translate("full_facility_gui", u"Spark", None))
+        self.bnc_laser_mode.setText(QCoreApplication.translate("full_facility_gui", u"Laser", None))
     # retranslateUi
 

@@ -174,6 +174,9 @@ def set_ignite_read_pressure(testcount, vacuum_pressure, fill_pressure):
     _daq2_state = off_states
     print("timing box signal sent")
 
+    bnc_box_control.switch_preset(9) #switches bnc box back to continuous mode 
+
+
     sample_rate_Hz = 1_000_000
     duration_s = 0.1
     samples = int(sample_rate_Hz * duration_s)
@@ -196,6 +199,9 @@ def set_ignite_read_pressure(testcount, vacuum_pressure, fill_pressure):
         print("Waiting for trigger on PFI1")
         data = ai_task.read(number_of_samples_per_channel=samples, timeout=10.0)
         print("acquisition complete")
+
+
+
 
     data = np.asarray(data, dtype=np.float64)
     if data.ndim == 1:
@@ -229,7 +235,6 @@ def set_ignite_read_pressure(testcount, vacuum_pressure, fill_pressure):
                 [time_axis[i], pt1[i], pt2[i], pt3[i], pt4[i], pt5[i], pt6[i], pt7[i], pt8[i]]
             )
     
-    bnc_box_control.switch_preset(9) #switches bnc box back to continuous mode 
     
 
 
@@ -268,4 +273,4 @@ def read_vacuum_pressure():
             )
             data = ai_task.read(number_of_samples_per_channel=samples)
             avg = np.mean(data)
-    return avg * 133.332 / 10 #returns pascals, 1 Torr = 133.322 Pa / 10 V 
+    return avg * 133.322 / 10

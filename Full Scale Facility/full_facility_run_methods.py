@@ -118,8 +118,8 @@ async def automatic_test(
     print(f"Using fill time input: {fill_time:.2f} s; MFC log {total_duration:.2f} s (incl. {buf:.1f} s buffers); "
           f"{FILL_LOG_SAMPLE_RATE_HZ:.0f} Hz")
 
-    bnc_box_control.switch_preset(9) #ensures bnc box is in continuous mode 
-    bnc_box_control.arm("ON") #ensures BNC box is running 
+    # bnc_box_control.switch_preset(9) #ensures bnc box is in continuous mode 
+    # bnc_box_control.arm("ON") #ensures BNC box is running 
 
     await _pre_fill_vacuum_shutdown()
 
@@ -186,8 +186,8 @@ async def fill_and_driver_sequence(
     except Exception as e:
         print("Klinger move to -29500 could not start:", e)
 
-    bnc_box_control.switch_preset(9) #ensures bnc box is in continuous mode 
-    bnc_box_control.arm("ON") #ensures BNC box is running 
+    # bnc_box_control.switch_preset(9) #ensures bnc box is in continuous mode 
+    # bnc_box_control.arm("ON") #ensures BNC box is running 
 
     #sets the fill time and buffer time then prints the total duration and sample rate
     fill_time = max(0.0, float(fill_time_s))

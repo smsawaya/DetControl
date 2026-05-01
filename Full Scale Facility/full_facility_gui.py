@@ -208,8 +208,8 @@ class MyDialog(QDialog):
 
         # Ensures BNC box is in continuous mode and armed on GUI startup; labels track last commands.
         try:
-            bnc_box_control.switch_preset(9)
-            bnc_box_control.arm("ON")
+            # bnc_box_control.switch_preset(9)
+            # bnc_box_control.arm("ON")
             self.ui.bnc_arm_state.setText("ON")
             self.ui.bnc_mode_state.setText("Continuous")
         except Exception as e:
@@ -456,28 +456,28 @@ class MyDialog(QDialog):
 
     def _bnc_gui_arm_on(self):
         try:
-            bnc_box_control.arm("ON")
+            # bnc_box_control.arm("ON")
             self.ui.bnc_arm_state.setText("ON")
         except Exception as e:
             print("BNC arm ON failed:", e)
 
     def _bnc_gui_arm_off(self):
         try:
-            bnc_box_control.arm("OFF")
+            # bnc_box_control.arm("OFF")
             self.ui.bnc_arm_state.setText("OFF")
         except Exception as e:
             print("BNC arm OFF failed:", e)
 
     def _bnc_gui_continuous_mode(self):
         try:
-            bnc_box_control.switch_preset(9)
+            # bnc_box_control.switch_preset(9)
             self.ui.bnc_mode_state.setText("Continuous (preset 9)")
         except Exception as e:
             print("BNC continuous mode failed:", e)
 
     def _bnc_gui_single_mode(self):
         try:
-            bnc_box_control.switch_preset(12)
+            # bnc_box_control.switch_preset(12)
             self.ui.bnc_mode_state.setText("Single shot (preset 12)")
         except Exception as e:
             print("BNC single-shot mode failed:", e)
@@ -654,7 +654,7 @@ class MyDialog(QDialog):
 
     #is run at start of automatic test
     def update_vacuum_pressure(self):
-        vacuum_pressure = nicontrol.read_vacuum_pressure() * 1000
+        vacuum_pressure = nicontrol.read_vacuum_pressure()
         #print(vacuum_pressure)
         self.vacuum_pressure = vacuum_pressure
         self.ui.vacuum_pressure_readout.display(vacuum_pressure)
