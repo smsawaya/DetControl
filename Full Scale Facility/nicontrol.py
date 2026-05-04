@@ -22,7 +22,7 @@ FILL_GAUGE_AI_CHANNEL = "cDAQ9188-169338EMod3/ai0"
 VACUUM_GAUGE_AI_CHANNEL = "cDAQ9188-169338EMod3/ai1"
 
 #number of channels used for fill logging 
-_FILL_LOG_N_AI_CH = 6  # Mod3/ai0 fill gauge + Mod3/ai1 vacuum gauge + Mod8 ai0:3 MFC A–D
+_FILL_LOG_N_AI_CH = 5  # Mod3/ai0 fill gauge + Mod3/ai1 vacuum gauge + Mod8 ai0:2 MFC A–C
 
 _daq1_state = [False] * 8
 _daq2_state = [False] * 8
@@ -80,7 +80,7 @@ def set_mfc_setpoints_analog(setpoint_a, setpoint_b, setpoint_c, setpoint_d=0.0)
         ao_task.write(voltages, auto_start=True)
 
 
-# Output: time_s, pressures in kPa, flow_a–d (numpy arrays). fill_log_csv adds phase/event and writes CSV.
+# Output: time_s, pressures in kPa, flow_a–c (numpy arrays). fill_log_csv adds phase/event and writes CSV.
 def acquire_fill_mfc_log(duration_s, sample_rate_hz):
     duration_s = float(duration_s)
     sr = float(sample_rate_hz)
@@ -91,7 +91,6 @@ def acquire_fill_mfc_log(duration_s, sample_rate_hz):
         "flow_a": np.array([]),
         "flow_b": np.array([]),
         "flow_c": np.array([]),
-        "flow_d": np.array([]),
         "duration_s": 0.0,
         "sample_rate_hz": sr,
     }
@@ -104,10 +103,10 @@ def acquire_fill_mfc_log(duration_s, sample_rate_hz):
 
     with _ai_read_lock:
         with nidaqmx.Task() as ai_task:
-            # Mod3/ai0 fill gauge, Mod3/ai1 vacuum gauge, Mod8 ai0:3 MFC A–D (rows 0–5).
+            # Mod3/ai0 fill gauge, Mod3/ai1 vacuum gauge, Mod8 ai0:2 MFC A–C (rows 0–4).
             ai_task.ai_channels.add_ai_voltage_chan(FILL_GAUGE_AI_CHANNEL, min_val=0, max_val=10)
             ai_task.ai_channels.add_ai_voltage_chan(VACUUM_GAUGE_AI_CHANNEL, min_val=0, max_val=10)
-            for suffix in ("ai0", "ai1", "ai2", "ai3"):
+            for suffix in ("ai0", "ai1", "ai2"):  # MFC A, B, C — ai3 (MFC D) not connected; add "ai3" here to re-enable
                 ai_task.ai_channels.add_ai_voltage_chan(
                     f"{MFC8_DEVICE}/{suffix}",
                     min_val=0.0,
@@ -126,6 +125,7 @@ def acquire_fill_mfc_log(duration_s, sample_rate_hz):
 
     #this part checks if the data is in the correct format
     # Usually (5, n); if you ever see (n, 5), flip once so row 0 stays the gauge.
+    # Update _FILL_LOG_N_AI_CH and the channel loop above if MFC D is reconnected.
     if (
         data.ndim == 2
         and data.shape[0] != _FILL_LOG_N_AI_CH
@@ -140,13 +140,12 @@ def acquire_fill_mfc_log(duration_s, sample_rate_hz):
     # Per-sample conversion: gauges use facility kPa scale; each MFC uses V × (full_scale_SLPM / 5 V).
     v_g = data[0]   # fill gauge voltage
     v_vac = data[1] # vacuum gauge voltage
-    va, vb, vc, vd = data[2], data[3], data[4], data[5]  # mfc voltages
+    va, vb, vc = data[2], data[3], data[4]  # MFC A, B, C voltages
     p_kpa = v_g * 103.421 / 10.0
     vac_kpa = (v_vac / 10.0) * 0.133322  # 0–10 V → 0–1 torr → kPa
     fa = va * MFC_MAX_SLPM["A"] / 5.0
     fb = vb * MFC_MAX_SLPM["B"] / 5.0
     fc = vc * MFC_MAX_SLPM["C"] / 5.0
-    fd = vd * MFC_MAX_SLPM["D"] / 5.0
     time_s = np.arange(n, dtype=np.float64) / sr #time array from the number of samples and the sample rate
     
     return {
@@ -156,7 +155,6 @@ def acquire_fill_mfc_log(duration_s, sample_rate_hz):
         "flow_a": fa,
         "flow_b": fb,
         "flow_c": fc,
-        "flow_d": fd,
         "duration_s": float(n / sr),
         "sample_rate_hz": sr,
     }
