@@ -1,3 +1,6 @@
+'This code runs the tests, both with and without driver, as well as the purge'
+
+
 import nicontrol
 import asyncio
 import threading
@@ -7,8 +10,11 @@ import klinger_control
 import bnc_box_control
 
 
+#VARIABLE DEFINITIONS-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 # Hardware sample clock for fill CSV (Hz). Row spacing = 1 / FILL_LOG_SAMPLE_RATE_HZ.
 FILL_LOG_SAMPLE_RATE_HZ = 1000.0
+
 # Pre/post capture around the scripted experiment (aligns with asyncio.sleep below).
 FILL_LOG_PRE_BUFFER_S = 0.5
 FILL_LOG_POST_BUFFER_S = 1.0
@@ -66,6 +72,10 @@ BEGIN_VACUUM_DAQ1 = [True, False, False, True, True, True, True, False]
 BEGIN_VACUUM_DAQ2 = [True, True, False, True, False, False, False, False]
 
 
+#FUNCTIONS-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+#sends solenoid values for vacuuming down
 def begin_vacuum_sequence():
     """S1–S4 closed; S5 open; S6/S7 closed; S8 open; S9 open; S10 on (vacuum valve + pump)."""
     d1 = list(BEGIN_VACUUM_DAQ1)
@@ -75,6 +85,7 @@ def begin_vacuum_sequence():
     return d1, d2
 
 
+#closes vacuum valves before fill 
 async def _pre_fill_vacuum_shutdown():
     """Close vacuum valve (S9), wait 1 s, then turn vacuum pump (S10) off."""
     d1, d2 = nicontrol.get_daq_states()
@@ -92,10 +103,13 @@ async def _pre_fill_vacuum_shutdown():
     nicontrol.set_digital_output_2(d2)
 
 
+#sets mass flow rates 
 def _set_mfc_rates(setpoint_a, setpoint_b, setpoint_c, setpoint_d=0.0):
     nicontrol.set_mfc_setpoints_analog(setpoint_a, setpoint_b, setpoint_c, setpoint_d)
 
 
+
+#fill without driver 
 async def automatic_test(
     setpointA, setpointB, setpointC, setpointD, setpointC_driver,
     on_fill_complete=None,
@@ -165,6 +179,7 @@ async def automatic_test(
     print("DAQ complete. Ignite when ready; use Purge when done.")
 
 
+#fill with driver injection 
 async def fill_and_driver_sequence(
     setpointA, setpointB, setpointC, setpointD, setpointC_driver,
     fill_time_s=0.0,  # GUI: fill_time box
@@ -291,6 +306,7 @@ async def fill_and_driver_sequence(
     print("Reactant fill and driver valve sequence complete. Ignite when ready; use Purge when done.")
 
 
+#sets solenoids for purge
 async def purge(setpointA, setpointB, setpointC, setpointD, on_mfc_setpoints_changed=None):
     _ = (setpointA, setpointB, setpointC, setpointD)
     _set_mfc_rates(0.0, 0.0, 0.0, 0.0)

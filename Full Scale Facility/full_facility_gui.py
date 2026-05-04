@@ -1,3 +1,6 @@
+'Run this file to run the GUI! This is the main GUI file that maps GUI objects and buttons to functions' 
+'Ccontains auto-update functions for pressure/MFCs. Also contains workers to run the tests in the background while still able to access GUI'
+
 import sys
 from PySide6.QtWidgets import QApplication, QDialog
 from PySide6.QtCore import QTimer, QThread, Signal, QObject
@@ -9,14 +12,11 @@ from nidaqmx.constants import AcquisitionType, READ_ALL_AVAILABLE
 import alicatcontrol
 import klinger_control
 import asyncio
-#import dataacquisition
 import numpy as np
 import threading
 import time
 
 import audio_player
-# import win32gui
-# import win32console
 
 from ui_full_facility_gui_script import Ui_full_facility_gui
 '''This calls the python file that was created FROM the .ui file (ui_full_facility_gui_script.py). 
@@ -27,7 +27,7 @@ VACUUM_AUDIO_THRESHOLD_PA = 0.5
 VACUUM_AUDIO_INTERVAL_S = 30.0
 
 
-# GUI S1–S10 → (which_daq: 1=Mod1 / 2=Mod2, channel 0–7, invert_line_for_normally_open).
+# GUI S1–S10 → (which_daq: 1=Mod1 / 2=Mod2, channel 0–7, normally open or normally closed).
 SOLENOID_GUI_MAP = [
     (1, 1, False),  # S1 driver fuel
     (1, 0, False),  # S2 driver fuel mix
@@ -54,6 +54,8 @@ def _solenoid_line_seems_open(line_high, invert):
 #         # MoveWindow(handle, x, y, width, height, repaint_boolean)
 #         win32gui.MoveWindow(hwnd, x, y, width, height, True)
         
+
+
 #background MFC monitor (Serial)
 class MFCMonitorWorker(QObject):
     flows_updated = Signal(float, float, float)
@@ -87,6 +89,8 @@ class MFCMonitorWorker(QObject):
                     pass
             time.sleep(self.interval_s)
 
+
+#worker for no driver tests and purge 
 class AutomationWorker(QObject):
     finished = Signal()
     fill_phase_complete = Signal()
@@ -120,6 +124,7 @@ class AutomationWorker(QObject):
         self.finished.emit()
 
 
+#worker for running tests with driver 
 class DriverWorker(QObject):
     finished = Signal()
     fill_phase_complete = Signal()
@@ -164,6 +169,7 @@ class DriverWorker(QObject):
         self.finished.emit()
 
 
+#worker for NI control (solenoid buttons and ignite button)
 class SolenoidWorker(QObject):
     finished = Signal()
     def __init__(self, daq1, daq2, testcount, vacuum_pressure, post_fill_pressure, ignition_mode="laser"):
@@ -191,9 +197,12 @@ class SolenoidWorker(QObject):
 
 
 
+#main class and functions 
+
 class MyDialog(QDialog):
 
 
+    #initialization: sets startup values and connects buttons to functions 
 
     def __init__(self, plumbing_diagram=None):
         #MyDialog starts the GUI. this first section is for initializing and connecting buttons. 
@@ -321,8 +330,8 @@ class MyDialog(QDialog):
             pass
 
     
+    #update MFC setpoints button
     def save_setpoints(self):
-        #This function can be used to update the setpoints
         reset_button = self.ui.resetmfc
         set_flow_button = self.ui.updatesetpoints
 
@@ -342,7 +351,8 @@ class MyDialog(QDialog):
         nicontrol.set_mfc_setpoints_analog(setpointA, setpointB, setpointC, setpointD)
         self.update_mfc_readouts(setpointA, setpointB, setpointC, setpointD)
 
-    #This function will reset the flow setpoints to 0.0 SLPM for all gas controllers. 
+
+    #This function resets flow setpoints to 0.0 SLPM for all gas controllers. 
     def reset_flow(self):
         reset_button = self.ui.resetmfc
         set_flow_button = self.ui.updatesetpoints
@@ -366,8 +376,8 @@ class MyDialog(QDialog):
         print("All gas setpoints reset to 0.0 SLPM.")
     
 
+    #uses serial commands to change gases 
     def change_gas(self):
-        # Each combo is connected to this slot; only update the MFC whose combo changed.
         # Serial commands only go to units listed in alicatcontrol.UNITS (e.g. ["B"] while A/C are off).
         combo = self.sender()
         manager = alicatcontrol.get_manager()
@@ -381,9 +391,11 @@ class MyDialog(QDialog):
         elif combo is self.ui.mfcDgas and "D" in U:
             manager.set_gas("D", self.ui.mfcDgas.currentText())
 
-    #Toggles the solenoid states based on button clicks from the GUI. Will highlight the active state green based on user input.
+
+    #Toggles the solenoid states based on button clicks from the GUI
     def toggle_solenoid(self, index, state):
-        # Sync local DAQ state with the last values actually written by nicontrol,
+       
+       # Sync local DAQ state with the last values actually written by nicontrol,
         # so we don't revert all lines to startup states when changing one solenoid
         try:
             daq1, daq2 = nicontrol.get_daq_states()
@@ -434,6 +446,8 @@ class MyDialog(QDialog):
         # Print the state of the solenoid
         print(f"Solenoid S{index+1} {'Open' if state else 'Closed'}.")
 
+
+    #updates the solenoid labels based on current DAQ states 
     def update_solenoid_labels(self):
         """Update solenoid status labels from last DAQ states (see nicontrol line map)."""
         try:
@@ -459,9 +473,15 @@ class MyDialog(QDialog):
         for i, o in enumerate(s_open):
             getattr(self.ui, f"S{i + 1}_state").setText("OPEN" if o else "CLOSED")
 
+
+    #vacuum down button 
     def begin_vacuum_down(self):
         self.daq1, self.daq2 = full_facility_run_methods.begin_vacuum_sequence()
         self.update_solenoid_labels()
+
+
+    #BNC BOX CONTROLS
+    #currently only contain if statement for if ignition mode is laser. still requires code for spark mode 
 
     def _bnc_gui_arm_on(self):
         if self.ignition_mode == "laser":
@@ -504,8 +524,8 @@ class MyDialog(QDialog):
         self.ui.bnc_ignition_state.setText("Spark")
 
   
+    #test with no driver button. calls the automation worker 
     stop_test = False
-
     def begin_testing(self, stop_test):
         button = self.ui.testautomation
         button.setEnabled(False)
@@ -561,6 +581,9 @@ class MyDialog(QDialog):
 
         automation_thread.start()
 
+
+
+    #test with driver button. calls the driver worker 
     def begin_driver_sequence(self):
         button = self.ui.driverButton
         button.setEnabled(False)
@@ -621,6 +644,9 @@ class MyDialog(QDialog):
 
         driver_thread.start()
     
+
+
+    #ignite button. calls ignite sequence in nicontrol through the solenoid worker 
     def ignite(self): 
         button = self.ui.igniteButton
         button.setEnabled(False)
@@ -640,6 +666,9 @@ class MyDialog(QDialog):
 
         ignite_thread.start()
 
+
+
+    #purge button. runs purge through the automation worker 
     def purge(self):
         button = self.ui.purgebutton
 
@@ -667,13 +696,17 @@ class MyDialog(QDialog):
 
         purge_thread.start()
 
-    #is run at end of fill phase
+
+
+
+    #reads the fill pressure gauge 
     def update_pressure(self):
         pressure = nicontrol.read_pressure()
         self.post_fill_pressure = pressure
         self.ui.pressure_readout.display(pressure)
 
-    #is run at start of automatic test
+
+    #reads the vacuum pressure gauge. continually checks if vacuum pressure reached to play audio if auto read is on 
     def update_vacuum_pressure(self):
         vacuum_pressure = nicontrol.read_vacuum_pressure()
         #print(vacuum_pressure)
@@ -697,7 +730,8 @@ class MyDialog(QDialog):
                     ).start()
 
 
-    #starts auto read during vacuum phase
+
+    #starts auto reading
     def start_auto_read(self):
         """Begin periodically updating vacuum and fill pressures (for manual/vacuum phase)."""
         if self.automation_running:
@@ -716,7 +750,7 @@ class MyDialog(QDialog):
         self.update_pressure()
 
 
-    #stops auto read during vacuum phase
+    #stops auto read
     def stop_auto_read(self):
         """Stop auto-updating pressures; displays hold last values."""
         if self.vacuum_pressure_timer is not None:
@@ -724,6 +758,7 @@ class MyDialog(QDialog):
         if self.pressure_timer is not None:
             self.pressure_timer.stop()
         self._vacuum_audio_next_mono = None
+
 
     #reenables the pressure auto-read controls after automatic test or purge is finished
     def reenable(self, button):
@@ -745,12 +780,15 @@ class MyDialog(QDialog):
                 self.ui.stop_auto_read.setEnabled(True)
 
 
+    #updates the MFC flow readouts based on serial polls 
     def update_mfc_flow_readouts(self, flow_a, flow_b, flow_c):
         """Measured flows from Alicat serial poll → main flow LCDs."""
         self.ui.mfcAreadout.display(flow_a)
         self.ui.mfcBreadout.display(flow_b)
         self.ui.mfcCreadout.display(flow_c)
 
+
+    #updates the last sent setpoint displays 
     def update_mfc_readouts(self, setpoint_a, setpoint_b, setpoint_c, _setpoint_d=0.0):
         """Last commanded MFC setpoints on mfc*_last_setpoint LCDs (not Alicat flow readouts)."""
         self.ui.mfcA_last_setpoint.display(setpoint_a)
@@ -759,7 +797,7 @@ class MyDialog(QDialog):
 
 
 
-#main: whats actually running  
+#main: whats actually running when you hit run. starts MyDialog   
 if __name__ == "__main__":
     def load_stylesheet(filename):
         with open(filename, "r") as f:

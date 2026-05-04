@@ -1,3 +1,6 @@
+'Code used to interface with the NI DAQs. Used for opening/closing solenoids, reading pressures/SLPMs, and running the ignite sequences'
+
+
 import nidaqmx
 from nidaqmx.constants import LineGrouping, AcquisitionType, Edge, TerminalConfiguration
 import numpy as np
@@ -8,6 +11,9 @@ import csv
 
 import bnc_box_control
 
+#VARIABLE DEFINITIONS--------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
 # MFC analog mapping and scale limits (0–5 V corresponds to max SLPM)
 MFC_MAX_SLPM = {"A": 20.0, "B": 20.0, "C": 50.0, "D": 50.0}
 MFC_AO_CHANNELS = "cDAQ9188-169338EMod7/ao0:3"
@@ -15,6 +21,7 @@ MFC8_DEVICE = "cDAQ9188-169338EMod8"
 FILL_GAUGE_AI_CHANNEL = "cDAQ9188-169338EMod3/ai0"
 VACUUM_GAUGE_AI_CHANNEL = "cDAQ9188-169338EMod3/ai1"
 
+#number of channels used for fill logging 
 _FILL_LOG_N_AI_CH = 6  # Mod3/ai0 fill gauge + Mod3/ai1 vacuum gauge + Mod8 ai0:3 MFC A–D
 
 _daq1_state = [False] * 8
@@ -27,6 +34,9 @@ _ai_read_lock = threading.Lock()
 # Mod2 port0: 0=S7 exhaust (NO), 1=S8 gauge, 3=S10 vacuum pump; 6=timing out, 7=speaker.
 DAQ2_LINE_TIMING_OUTPUT = 6
 DAQ2_LINE_SPEAKER = 7
+
+#FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 #DAQ1 controller 
 def set_digital_output(states):
@@ -47,17 +57,17 @@ def set_digital_output_2(states):
     _daq2_state = list(states)
 
 
-#used for GUI updating
+#used for GUI updating. returns current daq states 
 def get_daq_states():
     return _daq1_state[:], _daq2_state[:]
 
-
+#helper function to convert voltage to flow rate based on a controller's max SLPM
 def _slpm_to_volts(setpoint_slpm, max_slpm):
     # Inverse of voltage→SLPM in acquire_fill_mfc_log: commanded SLPM → V to the AO channels.
     setpoint = max(0.0, min(float(setpoint_slpm), float(max_slpm)))
     return 5.0 * setpoint / float(max_slpm)
 
-
+#sets SLPMs using analog signals 
 def set_mfc_setpoints_analog(setpoint_a, setpoint_b, setpoint_c, setpoint_d=0.0):
     voltages = [
         _slpm_to_volts(setpoint_a, MFC_MAX_SLPM["A"]),
@@ -70,7 +80,7 @@ def set_mfc_setpoints_analog(setpoint_a, setpoint_b, setpoint_c, setpoint_d=0.0)
         ao_task.write(voltages, auto_start=True)
 
 
-# Output: time_s, pressure_kPa, flow_a–d (numpy arrays). fill_log_csv adds phase/event and writes CSV.
+# Output: time_s, pressures in kPa, flow_a–d (numpy arrays). fill_log_csv adds phase/event and writes CSV.
 def acquire_fill_mfc_log(duration_s, sample_rate_hz):
     duration_s = float(duration_s)
     sr = float(sample_rate_hz)
@@ -206,6 +216,8 @@ def laser_ignite_read_pressure(testcount, vacuum_pressure, fill_pressure):
         data = ai_task.read(number_of_samples_per_channel=samples, timeout=10.0)
         print("acquisition complete")
 
+
+#ignites the facility and reads the pressure taps (laser ignition mode)
 def spark_ignite_read_pressure(testcount, vacuum_pressure, fill_pressure):
     ignite_port = "cDAQ9188-169338EMod2/port0/line0:7"
     _, d2 = get_daq_states()
