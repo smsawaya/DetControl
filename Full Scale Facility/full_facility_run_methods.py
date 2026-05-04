@@ -10,7 +10,8 @@ import bnc_box_control
 # Hardware sample clock for fill CSV (Hz). Row spacing = 1 / FILL_LOG_SAMPLE_RATE_HZ.
 FILL_LOG_SAMPLE_RATE_HZ = 1000.0
 # Pre/post capture around the scripted experiment (aligns with asyncio.sleep below).
-FILL_LOG_BUFFER_S = 0.5
+FILL_LOG_PRE_BUFFER_S = 0.5
+FILL_LOG_POST_BUFFER_S = 1.0
 # Driver valve segments (fuel / ox); mix uses GUI driver_fill_time.
 DRIVER_FUEL_OX_S = 2.0
 
@@ -113,10 +114,11 @@ async def automatic_test(
 
 
     fill_time = max(0.0, float(fill_time_s))
-    buf = FILL_LOG_BUFFER_S
-    total_duration = buf + fill_time + buf
-    print(f"Using fill time input: {fill_time:.2f} s; MFC log {total_duration:.2f} s (incl. {buf:.1f} s buffers); "
-          f"{FILL_LOG_SAMPLE_RATE_HZ:.0f} Hz")
+    pre_buf = FILL_LOG_PRE_BUFFER_S
+    post_buf = FILL_LOG_POST_BUFFER_S
+    total_duration = pre_buf + fill_time + post_buf
+    print(f"Using fill time input: {fill_time:.2f} s; MFC log {total_duration:.2f} s "
+          f"(pre {pre_buf:.1f} s / post {post_buf:.1f} s buffers); {FILL_LOG_SAMPLE_RATE_HZ:.0f} Hz")
 
     # bnc_box_control.switch_preset(9) #ensures bnc box is in continuous mode 
     # bnc_box_control.arm("ON") #ensures BNC box is running 
@@ -131,7 +133,7 @@ async def automatic_test(
     )
     daq_thread.start()
 
-    await asyncio.sleep(buf)
+    await asyncio.sleep(pre_buf)
     print("Vacuum down complete. Starting fill sequence...")
 
     nicontrol.set_digital_output(_pad8(FILL_START_DAQ1))
@@ -151,12 +153,12 @@ async def automatic_test(
     if on_fill_complete is not None:
         on_fill_complete()
 
-    await asyncio.sleep(buf)
+    await asyncio.sleep(post_buf)
 
     daq_thread.join()
 
     acq = acq_result.get("acq") or {}
-    segs = fill_log_csv.segments_for_automatic_test(buf, fill_time, total_duration, setpointA, setpointB, setpointC)
+    segs = fill_log_csv.segments_for_automatic_test(pre_buf, fill_time, total_duration, setpointA, setpointB, setpointC)
     rows = fill_log_csv.fill_log_rows_from_acquisition(acq, segs)
     fill_log_csv.write_fill_flow_rates_csv(testcount, rows)
 
@@ -191,12 +193,13 @@ async def fill_and_driver_sequence(
 
     #sets the fill time and buffer time then prints the total duration and sample rate
     fill_time = max(0.0, float(fill_time_s))
-    buf = FILL_LOG_BUFFER_S
+    pre_buf = FILL_LOG_PRE_BUFFER_S
+    post_buf = FILL_LOG_POST_BUFFER_S
     experiment_core = fill_time + 2.0 * DRIVER_FUEL_OX_S + driver_mix_time_s
-    total_duration = buf + experiment_core + buf
+    total_duration = pre_buf + experiment_core + post_buf
     print(
         f"Using fill time input: {fill_time:.2f} s; driver mix segment: {driver_mix_time_s:.2f} s; "
-        f"MFC log {total_duration:.2f} s (incl. {buf:.1f} s buffers); {FILL_LOG_SAMPLE_RATE_HZ:.0f} Hz"
+        f"MFC log {total_duration:.2f} s (pre {pre_buf:.1f} s / post {post_buf:.1f} s buffers); {FILL_LOG_SAMPLE_RATE_HZ:.0f} Hz"
     )
 
     #starts the fill logging data acquisition thread
@@ -208,7 +211,7 @@ async def fill_and_driver_sequence(
     )
     daq_thread.start()
 
-    await asyncio.sleep(buf)
+    await asyncio.sleep(pre_buf)
     print("Fill + driver sequence starting (reactant fill, then driver valves).")
 
     #reactant fill start
@@ -266,14 +269,14 @@ async def fill_and_driver_sequence(
     if on_mfc_setpoints_changed is not None:
         on_mfc_setpoints_changed(0.0, 0.0, 0.0, 0.0)
 
-    await asyncio.sleep(buf)
+    await asyncio.sleep(post_buf)
 
     daq_thread.join() #joins the daq thread to the main thread
  
     #gets the acquisition result and segments the fill and driver sequence
     acq = acq_result.get("acq") or {}
     segs = fill_log_csv.segments_for_fill_and_driver(
-        buf,
+        pre_buf,
         fill_time,
         DRIVER_FUEL_OX_S,
         driver_mix_time_s,

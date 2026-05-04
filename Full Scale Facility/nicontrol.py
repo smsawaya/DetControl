@@ -13,8 +13,9 @@ MFC_MAX_SLPM = {"A": 20.0, "B": 20.0, "C": 50.0, "D": 50.0}
 MFC_AO_CHANNELS = "cDAQ9188-169338EMod7/ao0:3"
 MFC8_DEVICE = "cDAQ9188-169338EMod8"
 FILL_GAUGE_AI_CHANNEL = "cDAQ9188-169338EMod3/ai0"
+VACUUM_GAUGE_AI_CHANNEL = "cDAQ9188-169338EMod3/ai1"
 
-_FILL_LOG_N_AI_CH = 5  # Mod3 gauge + Mod8 ai0..3 (order below)
+_FILL_LOG_N_AI_CH = 6  # Mod3/ai0 fill gauge + Mod3/ai1 vacuum gauge + Mod8 ai0:3 MFC A–D
 
 _daq1_state = [False] * 8
 _daq2_state = [False] * 8
@@ -76,6 +77,7 @@ def acquire_fill_mfc_log(duration_s, sample_rate_hz):
     empty = {
         "time_s": np.array([]),
         "pressure_kpa": np.array([]),
+        "vacuum_pressure_kpa": np.array([]),
         "flow_a": np.array([]),
         "flow_b": np.array([]),
         "flow_c": np.array([]),
@@ -92,8 +94,9 @@ def acquire_fill_mfc_log(duration_s, sample_rate_hz):
 
     with _ai_read_lock:
         with nidaqmx.Task() as ai_task:
-            # Mod3 gauge + Mod8 ai0:3 (row 0 = gauge, 1–4 = MFC A–D).
+            # Mod3/ai0 fill gauge, Mod3/ai1 vacuum gauge, Mod8 ai0:3 MFC A–D (rows 0–5).
             ai_task.ai_channels.add_ai_voltage_chan(FILL_GAUGE_AI_CHANNEL, min_val=0, max_val=10)
+            ai_task.ai_channels.add_ai_voltage_chan(VACUUM_GAUGE_AI_CHANNEL, min_val=0, max_val=10)
             for suffix in ("ai0", "ai1", "ai2", "ai3"):
                 ai_task.ai_channels.add_ai_voltage_chan(
                     f"{MFC8_DEVICE}/{suffix}",
@@ -124,10 +127,12 @@ def acquire_fill_mfc_log(duration_s, sample_rate_hz):
             f"acquire_fill_mfc_log: expected {_FILL_LOG_N_AI_CH} channels x samples, got {data.shape}"
         )
 
-    # Per-sample conversion: gauge uses facility kPa scale; each MFC uses V × (full_scale_SLPM / 5 V).
-    v_g = data[0] #gauge voltage
-    va, vb, vc, vd = data[1], data[2], data[3], data[4] #mfc voltages
+    # Per-sample conversion: gauges use facility kPa scale; each MFC uses V × (full_scale_SLPM / 5 V).
+    v_g = data[0]   # fill gauge voltage
+    v_vac = data[1] # vacuum gauge voltage
+    va, vb, vc, vd = data[2], data[3], data[4], data[5]  # mfc voltages
     p_kpa = v_g * 103.421 / 10.0
+    vac_kpa = (v_vac / 10.0) * 0.133322  # 0–10 V → 0–1 torr → kPa
     fa = va * MFC_MAX_SLPM["A"] / 5.0
     fb = vb * MFC_MAX_SLPM["B"] / 5.0
     fc = vc * MFC_MAX_SLPM["C"] / 5.0
@@ -137,6 +142,7 @@ def acquire_fill_mfc_log(duration_s, sample_rate_hz):
     return {
         "time_s": time_s,
         "pressure_kpa": p_kpa,
+        "vacuum_pressure_kpa": vac_kpa,
         "flow_a": fa,
         "flow_b": fb,
         "flow_c": fc,
@@ -259,7 +265,8 @@ def spark_ignite_read_pressure(testcount, vacuum_pressure, fill_pressure):
         pt7 = data[6] if n_ch >= 7 else np.zeros(n_samples)
         pt8 = data[7] if n_ch >= 8 else np.zeros(n_samples)
 
-    filename = f"C:\\Users\\dedic-lab\\Documents\\Detonation_Facility_Testing\\TestData{testcount}.csv"
+    date_str = datetime.now().strftime("%m_%d_%Y")
+    filename = f"C:\\Users\\dedic-lab\\Documents\\Detonation_Facility_Testing\\{date_str}_pressure_taps_test_{testcount}.csv"
     time_axis = np.arange(n_samples, dtype=np.float64) / sample_rate_Hz
     with open(filename, "w", newline="") as f:
         writer = csv.writer(f)
