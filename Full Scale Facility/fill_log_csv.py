@@ -1,8 +1,10 @@
-"""Fill-flow CSV: segment tagging and writing `fill_flow_rates_test*.csv`."""
+"""Fill log csv helper function"""
 
 import csv
 import os
 from datetime import datetime
+
+#VARIABLES DEFINITION----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 FILL_LOG_DIR = r"C:\Users\dedic-lab\Documents\Detonation_Facility_Testing"
 
@@ -19,6 +21,8 @@ CSV_HEADER = (
     "setpoint_C_SLPM",
     "flow_C_SLPM",
 )
+
+#FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 #defines the segments for the automatic test
 def segments_for_automatic_test(buffer_s, fill_time, total_duration, setpoint_a, setpoint_b, setpoint_c):

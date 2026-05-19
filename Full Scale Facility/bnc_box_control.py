@@ -1,11 +1,17 @@
+"""Contains functions used to interface with the bnc boxes"""
+
 import serial
 import time
+
+#VARIABLES DEFINITION-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 LASER_COM_PORT = "COM6"
 IGNITION_COM_PORT = "COM7"
 BAUD = 9600
 READ_TIMEOUT_S = 1.0
 
+
+#FUNCTIONS------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 def switch_preset(preset_number, box):
     """Send *RCL <n> to the BNC box; expect a line containing ``ok`` (case-insensitive)."""

@@ -1,3 +1,6 @@
+""""used for serial communication with the Alicats. now only used for switching gasses and reading flow rates for GUI updates"""
+
+
 """
 Central MFC manager: one persistent serial connection per controller (A, B, C)
 opened when the GUI starts. All Alicat commands go through this manager to avoid
@@ -14,10 +17,26 @@ import serial as pyserial
 import alicat.util as alicat_util
 from alicat import FlowController
 
+#VARIABLES DEFINITION----------------------------------------------------------------------------------------------------------------------
+
+
 # --- Patch numat/alicat SerialClient: shared port + shared lock per address ---
 
 _port_entries = {}  # key -> {"ser", "refs"}
 
+
+DEFAULT_ADDRESS = "COM3"
+# Match Alicat front-panel unit IDs (A–Z). Must match hardware addressing on the multidrop line.
+UNITS = ["A", "B", "C"]
+
+# Serial settings passed to FlowController -> SerialClient (must match device menu).
+DEFAULT_BAUDRATE = 19200
+# Slightly longer timeout helps RS-485 / multidrop turnarounds.
+DEFAULT_SERIAL_TIMEOUT = 0.5
+
+
+
+#FUNCTIONS------------------------------------------------------------------------------------------------------------------------------------
 
 def _port_key(address, baudrate, bytesize, stopbits, parity, timeout):
     return (address, baudrate, bytesize, stopbits, parity, timeout)
@@ -93,14 +112,6 @@ gas_settings = {
     "D": {"gas": "N2", "setpoint": 0.0, "unit": "SLPM"},
 }
 
-DEFAULT_ADDRESS = "COM3"
-# Match Alicat front-panel unit IDs (A–Z). Must match hardware addressing on the multidrop line.
-UNITS = ["A", "B", "C"]
-
-# Serial settings passed to FlowController -> SerialClient (must match device menu).
-DEFAULT_BAUDRATE = 19200
-# Slightly longer timeout helps RS-485 / multidrop turnarounds.
-DEFAULT_SERIAL_TIMEOUT = 0.5
 
 
 def _flow_kwargs():

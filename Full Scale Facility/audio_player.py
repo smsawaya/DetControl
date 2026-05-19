@@ -1,4 +1,8 @@
+""""Contains text to speech functions to play audio alerts during testing"""
+
 import pyttsx3
+
+#FUNCTIONS------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 def vacuum_audio_indicator():
     engine = pyttsx3.init()
