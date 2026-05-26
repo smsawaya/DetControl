@@ -217,11 +217,11 @@ class MyDialog(QDialog):
 
         self.daq2 = list(full_facility_run_methods.PURGE_COMPLETE_DAQ2)
         nicontrol.set_digital_output_2(self.daq2)
-        # bnc_box_control.set_500(self.daq2)
+        # bnc_box_control.set_500("ignition)
 
 
-        self.ignition_mode = "laser"
-        self.ui.bnc_ignition_state.setText("Laser")
+        self.ignition_mode = "Spark"
+        self.ui.bnc_ignition_state.setText("Spark")
 
         # Ensures BNC box is in continuous mode and armed on GUI startup; labels track last commands.
         try:
