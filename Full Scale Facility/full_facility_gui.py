@@ -217,6 +217,7 @@ class MyDialog(QDialog):
 
         self.daq2 = list(full_facility_run_methods.PURGE_COMPLETE_DAQ2)
         nicontrol.set_digital_output_2(self.daq2)
+        # bnc_box_control.set_500(self.daq2)
 
 
         self.ignition_mode = "laser"
