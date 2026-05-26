@@ -220,8 +220,8 @@ class MyDialog(QDialog):
         # bnc_box_control.set_500("ignition)
 
 
-        self.ignition_mode = "Spark"
-        self.ui.bnc_ignition_state.setText("Spark")
+        self.ignition_mode = "spark"
+        self.ui.bnc_ignition_state.setText("spark")
 
         # Ensures BNC box is in continuous mode and armed on GUI startup; labels track last commands.
         try:
